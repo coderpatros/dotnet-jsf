@@ -52,7 +52,7 @@ public class SingleSignatureTests
         });
 
         signed["signature"].Should().NotBeNull();
-        var result = _service.Verify(signed, new VerificationOptions());
+        var result = _service.Verify(signed, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -136,7 +136,7 @@ public class SingleSignatureTests
             PublicKey = jwk
         });
 
-        var result = _service.Verify(signed, new VerificationOptions());
+        var result = _service.Verify(signed, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -153,7 +153,7 @@ public class SingleSignatureTests
             PublicKey = jwk
         });
 
-        var result = _service.Verify(signed, new VerificationOptions());
+        var result = _service.Verify(signed, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -339,7 +339,7 @@ public class SingleSignatureTests
         pk["e"].Should().NotBeNull();
 
         // Verify using only the embedded public key (no explicit key)
-        var result = _service.Verify(signed, new VerificationOptions());
+        var result = _service.Verify(signed, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -363,7 +363,7 @@ public class SingleSignatureTests
         });
 
         // Verify using only the embedded public key
-        var result = _service.Verify(signed, new VerificationOptions());
+        var result = _service.Verify(signed, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -412,7 +412,7 @@ public class SingleSignatureTests
         // Attempt verification without any key
         var act = () => _service.Verify(signed, new VerificationOptions());
         act.Should().Throw<JsfException>()
-            .WithMessage("*No verification key*");
+            .WithMessage("*No verification key available*");
     }
 
     /// <summary>
@@ -478,7 +478,7 @@ public class SingleSignatureTests
         sigObj["keyId"]!.GetValue<string>().Should().Be("example.com:p256");
 
         // Should verify using embedded key
-        var result = _service.Verify(signed, new VerificationOptions());
+        var result = _service.Verify(signed, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -506,7 +506,7 @@ public class SingleSignatureTests
         sigObj["otherExt"]!.GetValue<string>().Should().Be("Cool Stuff");
 
         // Extensions are part of signing input, so verify should pass
-        var result = _service.Verify(signed, new VerificationOptions());
+        var result = _service.Verify(signed, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 

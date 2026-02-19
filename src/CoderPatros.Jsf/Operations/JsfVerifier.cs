@@ -188,10 +188,10 @@ internal sealed class JsfVerifier
         if (options.Key is not null)
             return options.Key;
 
-        if (sig.PublicKey is not null)
+        if (options.AllowEmbeddedPublicKey && sig.PublicKey is not null)
             return JwkKeyConverter.ToVerificationKey(sig.PublicKey);
 
-        throw new JsfException("No verification key available. Provide a key, key resolver, or embed the public key in the signature.");
+        throw new JsfException("No verification key available. Provide a key or key resolver. To use the embedded public key, set AllowEmbeddedPublicKey to true.");
     }
 
     private static VerificationKey ResolveVerificationKey(VerificationKey key)

@@ -55,7 +55,7 @@ public class MultiSignatureTests
         var signers = withBothSigners["signers"]!.AsArray();
         signers.Count.Should().Be(2);
 
-        var result = _service.VerifySigners(withBothSigners, new VerificationOptions());
+        var result = _service.VerifySigners(withBothSigners, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -80,7 +80,7 @@ public class MultiSignatureTests
             PublicKey = rsaJwk
         });
 
-        var result = _service.VerifySigners(withBoth, new VerificationOptions());
+        var result = _service.VerifySigners(withBoth, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -178,12 +178,12 @@ public class MultiSignatureTests
             Excludes = ["myUnsignedData"]
         });
 
-        var result = _service.VerifySigners(withBoth, new VerificationOptions());
+        var result = _service.VerifySigners(withBoth, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
 
         // Modifying excluded property should not affect verification
         withBoth["myUnsignedData"] = "changed value";
-        var result2 = _service.VerifySigners(withBoth, new VerificationOptions());
+        var result2 = _service.VerifySigners(withBoth, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result2.IsValid.Should().BeTrue();
     }
 
@@ -224,7 +224,7 @@ public class MultiSignatureTests
         signers[0]!.AsObject()["otherExt"]!.GetValue<string>().Should().Be("Cool Stuff");
         signers[1]!.AsObject()["otherExt"]!.GetValue<string>().Should().Be("Other Data");
 
-        var result = _service.VerifySigners(withBoth, new VerificationOptions());
+        var result = _service.VerifySigners(withBoth, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -255,7 +255,7 @@ public class MultiSignatureTests
         // Tamper with document
         withBoth["message"] = "tampered";
 
-        var result = _service.VerifySigners(withBoth, new VerificationOptions());
+        var result = _service.VerifySigners(withBoth, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeFalse();
     }
 

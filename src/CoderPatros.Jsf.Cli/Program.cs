@@ -186,7 +186,12 @@ signCommand.SetAction(parseResult =>
 
 var verifyKeyOption = new Option<FileInfo?>("--key", "-k")
 {
-    Description = "Path to public/symmetric JWK file (uses embedded key if not provided)"
+    Description = "Path to public/symmetric JWK file"
+};
+
+var allowEmbeddedKeyOption = new Option<bool>("--allow-embedded-key")
+{
+    Description = "Allow verification using the public key embedded in the signature"
 };
 
 var verifyInputOption = new Option<FileInfo?>("--input", "-i")
@@ -196,11 +201,13 @@ var verifyInputOption = new Option<FileInfo?>("--input", "-i")
 
 var verifyCommand = new Command("verify", "Verify a signed JSON document");
 verifyCommand.Options.Add(verifyKeyOption);
+verifyCommand.Options.Add(allowEmbeddedKeyOption);
 verifyCommand.Options.Add(verifyInputOption);
 
 verifyCommand.SetAction(parseResult =>
 {
     var keyFile = parseResult.GetValue(verifyKeyOption);
+    var allowEmbeddedKey = parseResult.GetValue(allowEmbeddedKeyOption);
     var inputFile = parseResult.GetValue(verifyInputOption);
 
     string jsonInput;
@@ -218,7 +225,10 @@ verifyCommand.SetAction(parseResult =>
         jsonInput = Console.In.ReadToEnd();
     }
 
-    var verificationOptions = new VerificationOptions();
+    var verificationOptions = new VerificationOptions
+    {
+        AllowEmbeddedPublicKey = allowEmbeddedKey
+    };
 
     if (keyFile is not null)
     {

@@ -24,7 +24,7 @@ namespace CoderPatros.Jsf.Models;
 /// </summary>
 public sealed record VerificationOptions
 {
-    /// <summary>Key for verification. If null, the embedded public key from the signature is used.</summary>
+    /// <summary>Key for verification.</summary>
     public VerificationKey? Key { get; init; }
 
     /// <summary>
@@ -32,6 +32,13 @@ public sealed record VerificationOptions
     /// Called with each signature to resolve the appropriate verification key.
     /// </summary>
     public Func<SignatureCore, VerificationKey>? KeyResolver { get; init; }
+
+    /// <summary>
+    /// When true, allows verification using the public key embedded in the signature.
+    /// Defaults to false. Only enable this when you trust the source of the document,
+    /// as an attacker can embed any public key in a signature they create.
+    /// </summary>
+    public bool AllowEmbeddedPublicKey { get; init; }
 
     /// <summary>Custom signature property name (default: "signature").</summary>
     public string SignaturePropertyName { get; init; } = "signature";

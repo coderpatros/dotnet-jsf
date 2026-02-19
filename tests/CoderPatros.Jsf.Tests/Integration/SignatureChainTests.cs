@@ -47,7 +47,7 @@ public class SignatureChainTests
         var chain = chained["signatureChain"]!.AsArray();
         chain.Count.Should().Be(1);
 
-        var result = _service.VerifyChain(chained, new VerificationOptions());
+        var result = _service.VerifyChain(chained, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -75,7 +75,7 @@ public class SignatureChainTests
         var chain = withBoth["signatureChain"]!.AsArray();
         chain.Count.Should().Be(2);
 
-        var result = _service.VerifyChain(withBoth, new VerificationOptions());
+        var result = _service.VerifyChain(withBoth, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -123,7 +123,7 @@ public class SignatureChainTests
         var chain = withBoth["signatureChain"]!.AsArray();
         chain.Count.Should().Be(2);
 
-        var result = _service.VerifyChain(withBoth, new VerificationOptions());
+        var result = _service.VerifyChain(withBoth, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -199,7 +199,7 @@ public class SignatureChainTests
         chain[0]!.AsObject()["otherExt"]!.GetValue<string>().Should().Be("Cool Stuff");
         chain[1]!.AsObject()["otherExt"]!.GetValue<string>().Should().Be("Other Data");
 
-        var result = _service.VerifyChain(withBoth, new VerificationOptions());
+        var result = _service.VerifyChain(withBoth, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 
@@ -233,12 +233,12 @@ public class SignatureChainTests
             Excludes = ["myUnsignedData"]
         });
 
-        var result = _service.VerifyChain(withBoth, new VerificationOptions());
+        var result = _service.VerifyChain(withBoth, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
 
         // Modifying excluded property should not affect verification
         withBoth["myUnsignedData"] = "changed";
-        var result2 = _service.VerifyChain(withBoth, new VerificationOptions());
+        var result2 = _service.VerifyChain(withBoth, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result2.IsValid.Should().BeTrue();
     }
 
@@ -269,7 +269,7 @@ public class SignatureChainTests
         // Tamper with document
         withBoth["message"] = "tampered";
 
-        var result = _service.VerifyChain(withBoth, new VerificationOptions());
+        var result = _service.VerifyChain(withBoth, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeFalse();
     }
 
@@ -308,7 +308,7 @@ public class SignatureChainTests
         var chain = with3["signatureChain"]!.AsArray();
         chain.Count.Should().Be(3);
 
-        var result = _service.VerifyChain(with3, new VerificationOptions());
+        var result = _service.VerifyChain(with3, new VerificationOptions { AllowEmbeddedPublicKey = true });
         result.IsValid.Should().BeTrue();
     }
 }

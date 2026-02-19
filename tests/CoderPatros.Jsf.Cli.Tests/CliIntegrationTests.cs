@@ -122,8 +122,8 @@ public class CliIntegrationTests : IDisposable
         var signedFile = Path.Combine(_tempDir, "signed.json");
         File.WriteAllText(signedFile, signedOutput);
 
-        // Verify without --key (uses embedded public key)
-        var (verifyExit, verifyOutput, _) = RunCli($"verify -i \"{signedFile}\"");
+        // Verify with --allow-embedded-key (uses embedded public key)
+        var (verifyExit, verifyOutput, _) = RunCli($"verify --allow-embedded-key -i \"{signedFile}\"");
         verifyExit.Should().Be(0);
         verifyOutput.Should().Contain("Valid");
     }
