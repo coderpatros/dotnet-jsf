@@ -95,7 +95,7 @@ var signed = service.Sign(document, new SignatureOptions
     Algorithm = JsfAlgorithm.ES256,
     Key = signingKey,
     Excludes = ["timestamp", "nonce"],
-    Extensions = new Dictionary<string, string>
+    Extensions = new Dictionary<string, JsonNode?>
     {
         ["https://example.com/ext"] = "value"
     }
@@ -117,6 +117,83 @@ var hmacSigningKey = SigningKey.FromHmac(hmacKey);
 // EdDSA (via raw key bytes)
 var edSigningKey = SigningKey.FromEdDsa(privateKeyBytes, JsfAlgorithm.Ed25519);
 ```
+
+### Custom signature property name
+
+By default signatures are stored in a `"signature"` property. You can override this:
+
+```csharp
+var signed = service.Sign(document, new SignatureOptions
+{
+    Algorithm = JsfAlgorithm.ES256,
+    Key = signingKey,
+    SignaturePropertyName = "proof"
+});
+
+var result = service.Verify(signed, new VerificationOptions
+{
+    SignaturePropertyName = "proof"
+});
+```
+
+### Custom algorithm registry
+
+You can register additional algorithms by providing a custom `SignatureAlgorithmRegistry`:
+
+```csharp
+var registry = new SignatureAlgorithmRegistry();
+registry.Register(myCustomAlgorithm);
+
+var service = new JsfSignatureService(registry);
+```
+
+## CLI
+
+The `CoderPatros.Jsf.Cli` project provides a command-line tool for key generation, signing, and verification.
+
+### Generate a key pair
+
+```sh
+# Asymmetric (generates <alg>-private.jwk and <alg>-public.jwk)
+jsf generate-key -a ES256
+
+# Symmetric / HMAC (generates <alg>-symmetric.jwk)
+jsf generate-key -a HS256
+
+# Specify output directory
+jsf generate-key -a ES256 -o ./keys
+```
+
+### Sign a document
+
+```sh
+# From a file
+jsf sign -k ES256-private.jwk -a ES256 -i document.json
+
+# From stdin
+echo '{"message":"hello"}' | jsf sign -k ES256-private.jwk -a ES256
+
+# Embed the public key in the signature
+jsf sign -k ES256-private.jwk -a ES256 --embed-public-key -i document.json
+
+# Include a key identifier
+jsf sign -k ES256-private.jwk -a ES256 --key-id my-key-1 -i document.json
+```
+
+### Verify a signed document
+
+```sh
+# With an explicit key
+jsf verify -k ES256-public.jwk -i signed.json
+
+# Using the embedded public key
+jsf verify -i signed.json
+
+# From stdin
+cat signed.json | jsf verify -k ES256-public.jwk
+```
+
+Outputs `Valid` on success or `Invalid: <error>` on failure.
 
 ## How JSF signing works
 
