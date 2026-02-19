@@ -21,10 +21,12 @@ namespace CoderPatros.Jsf.Keys;
 
 /// <summary>
 /// Wraps a public or symmetric key for verification operations.
+/// Implements IDisposable to securely zero key material on disposal.
 /// </summary>
-public sealed class VerificationKey
+public sealed class VerificationKey : IDisposable
 {
     internal object KeyMaterial { get; }
+    private bool _disposed;
 
     private VerificationKey(object keyMaterial)
     {
@@ -37,6 +39,25 @@ public sealed class VerificationKey
     public static VerificationKey FromEdDsa(byte[] publicKey, string curve) =>
         new(new EdDsaKeyMaterial(publicKey, curve));
     public static VerificationKey FromJwk(JwkPublicKey jwk) => new(jwk);
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        switch (KeyMaterial)
+        {
+            case ECDsa ecdsa:
+                ecdsa.Dispose();
+                break;
+            case RSA rsa:
+                rsa.Dispose();
+                break;
+            case HmacKeyMaterial hmac:
+                CryptographicOperations.ZeroMemory(hmac.Key);
+                break;
+        }
+    }
 
     internal sealed record HmacKeyMaterial(byte[] Key);
     internal sealed record EdDsaKeyMaterial(byte[] PublicKey, string Curve);

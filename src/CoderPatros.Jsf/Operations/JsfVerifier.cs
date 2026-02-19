@@ -43,6 +43,9 @@ internal sealed class JsfVerifier
         try
         {
             var sig = SignatureObjectManipulator.ExtractSignature(document, options.SignaturePropertyName);
+            var algorithmCheck = CheckAcceptedAlgorithm(sig.Algorithm, options);
+            if (algorithmCheck is not null)
+                return algorithmCheck;
             var key = ResolveKey(sig, options);
             return VerifySingleSignature(document, sig, key, options.SignaturePropertyName);
         }
@@ -64,6 +67,9 @@ internal sealed class JsfVerifier
             for (int i = 0; i < signers.Count; i++)
             {
                 var sig = signers[i];
+                var algorithmCheck = CheckAcceptedAlgorithm(sig.Algorithm, options);
+                if (algorithmCheck is not null)
+                    return algorithmCheck;
                 var key = ResolveKey(sig, options);
                 var result = VerifyMultiSignerSignature(document, sig, key, i);
                 if (!result.IsValid)
@@ -90,6 +96,9 @@ internal sealed class JsfVerifier
             for (int i = 0; i < chain.Count; i++)
             {
                 var sig = chain[i];
+                var algorithmCheck = CheckAcceptedAlgorithm(sig.Algorithm, options);
+                if (algorithmCheck is not null)
+                    return algorithmCheck;
                 var key = ResolveKey(sig, options);
 
                 // Build the document as it was when this chain entry was created
@@ -178,6 +187,13 @@ internal sealed class JsfVerifier
         }
 
         return clone;
+    }
+
+    private static VerificationResult? CheckAcceptedAlgorithm(string algorithm, VerificationOptions options)
+    {
+        if (options.AcceptedAlgorithms is not null && !options.AcceptedAlgorithms.Contains(algorithm))
+            return VerificationResult.Failure($"Algorithm '{algorithm}' is not in the accepted algorithms list.");
+        return null;
     }
 
     private static VerificationKey ResolveKey(SignatureCore sig, VerificationOptions options)

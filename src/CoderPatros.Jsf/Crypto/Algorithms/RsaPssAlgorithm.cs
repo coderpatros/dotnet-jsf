@@ -20,6 +20,8 @@ using CoderPatros.Jsf.Keys;
 
 namespace CoderPatros.Jsf.Crypto.Algorithms;
 
+using CoderPatros.Jsf;
+
 internal sealed class RsaPssAlgorithm : ISignatureAlgorithm
 {
     public string AlgorithmId { get; }
@@ -31,25 +33,44 @@ internal sealed class RsaPssAlgorithm : ISignatureAlgorithm
         _hashAlgorithm = hashAlgorithm;
     }
 
+    private const int MinimumRsaKeySizeBits = 2048;
+
     public byte[] Sign(ReadOnlySpan<byte> data, SigningKey key)
     {
-        var rsa = (RSA)key.KeyMaterial;
+        if (key.KeyMaterial is not RSA rsa)
+            throw new JsfException($"Algorithm {AlgorithmId} requires an RSA key.");
+        ValidateKeySize(rsa);
         return rsa.SignData(data.ToArray(), _hashAlgorithm, RSASignaturePadding.Pss);
     }
 
     public bool Verify(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, VerificationKey key)
     {
-        var rsa = ResolveKey(key);
-        return rsa.VerifyData(data.ToArray(), signature.ToArray(), _hashAlgorithm, RSASignaturePadding.Pss);
+        var (rsa, ownsKey) = ResolveKey(key);
+        try
+        {
+            ValidateKeySize(rsa);
+            return rsa.VerifyData(data.ToArray(), signature.ToArray(), _hashAlgorithm, RSASignaturePadding.Pss);
+        }
+        finally
+        {
+            if (ownsKey)
+                rsa.Dispose();
+        }
     }
 
-    private static RSA ResolveKey(VerificationKey key)
+    private static void ValidateKeySize(RSA rsa)
+    {
+        if (rsa.KeySize < MinimumRsaKeySizeBits)
+            throw new JsfException($"RSA key size {rsa.KeySize} bits is below the minimum of {MinimumRsaKeySizeBits} bits.");
+    }
+
+    private static (RSA Key, bool OwnsKey) ResolveKey(VerificationKey key)
     {
         return key.KeyMaterial switch
         {
-            RSA rsa => rsa,
-            JwkPublicKey jwk => JwkKeyConverter.ToRsa(jwk),
-            _ => throw new ArgumentException("Invalid key type for RSA-PSS verification.")
+            RSA rsa => (rsa, false),
+            JwkPublicKey jwk => (JwkKeyConverter.ToRsa(jwk), true),
+            _ => throw new JsfException("Invalid key type for RSA-PSS verification.")
         };
     }
 }

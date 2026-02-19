@@ -40,6 +40,13 @@ public sealed record VerificationOptions
     /// </summary>
     public bool AllowEmbeddedPublicKey { get; init; }
 
+    /// <summary>
+    /// Optional set of accepted algorithm identifiers.
+    /// When set, signatures using algorithms not in this set will be rejected
+    /// before any cryptographic operations are attempted.
+    /// </summary>
+    public IReadOnlySet<string>? AcceptedAlgorithms { get; init; }
+
     /// <summary>Custom signature property name (default: "signature").</summary>
     public string SignaturePropertyName { get; init; } = "signature";
 }

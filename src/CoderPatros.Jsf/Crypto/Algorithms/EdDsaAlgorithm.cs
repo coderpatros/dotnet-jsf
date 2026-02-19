@@ -22,6 +22,8 @@ using CoderPatros.Jsf.Serialization;
 
 namespace CoderPatros.Jsf.Crypto.Algorithms;
 
+using CoderPatros.Jsf;
+
 internal sealed class EdDsaAlgorithm : ISignatureAlgorithm
 {
     public string AlgorithmId { get; }
@@ -33,20 +35,25 @@ internal sealed class EdDsaAlgorithm : ISignatureAlgorithm
 
     public byte[] Sign(ReadOnlySpan<byte> data, SigningKey key)
     {
-        var edKey = (SigningKey.EdDsaKeyMaterial)key.KeyMaterial;
+        if (key.KeyMaterial is not SigningKey.EdDsaKeyMaterial edKey)
+            throw new JsfException($"Algorithm {AlgorithmId} requires an EdDSA key.");
+        if (edKey.Curve != AlgorithmId)
+            throw new JsfException($"Algorithm {AlgorithmId} requires curve {AlgorithmId}, but key uses {edKey.Curve}.");
         var dataArray = data.ToArray();
 
         return edKey.Curve switch
         {
             "Ed25519" => SignEd25519(dataArray, edKey.PrivateKey),
             "Ed448" => SignEd448(dataArray, edKey.PrivateKey),
-            _ => throw new ArgumentException($"Unsupported EdDSA curve: {edKey.Curve}")
+            _ => throw new JsfException($"Unsupported EdDSA curve: {edKey.Curve}")
         };
     }
 
     public bool Verify(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, VerificationKey key)
     {
         var (publicKeyBytes, curve) = ResolvePublicKey(key);
+        if (curve != AlgorithmId)
+            throw new JsfException($"Algorithm {AlgorithmId} requires curve {AlgorithmId}, but key uses {curve}.");
         var dataArray = data.ToArray();
         var sigArray = signature.ToArray();
 
@@ -54,7 +61,7 @@ internal sealed class EdDsaAlgorithm : ISignatureAlgorithm
         {
             "Ed25519" => VerifyEd25519(dataArray, sigArray, publicKeyBytes),
             "Ed448" => VerifyEd448(dataArray, sigArray, publicKeyBytes),
-            _ => throw new ArgumentException($"Unsupported EdDSA curve: {curve}")
+            _ => throw new JsfException($"Unsupported EdDSA curve: {curve}")
         };
     }
 
@@ -96,7 +103,7 @@ internal sealed class EdDsaAlgorithm : ISignatureAlgorithm
         {
             VerificationKey.EdDsaKeyMaterial ed => (ed.PublicKey, ed.Curve),
             JwkPublicKey jwk when jwk.Kty == "OKP" => (Base64UrlEncoding.Decode(jwk.X!), jwk.Crv!),
-            _ => throw new ArgumentException("Invalid key type for EdDSA verification.")
+            _ => throw new JsfException("Invalid key type for EdDSA verification.")
         };
     }
 }

@@ -68,6 +68,7 @@ generateKeyCommand.SetAction(parseResult =>
         var symmetricJwk = JwkKeyHelper.GenerateSymmetricKey(algorithm);
         var symmetricPath = Path.Combine(outputDir.FullName, $"{algorithm}-symmetric.jwk");
         File.WriteAllText(symmetricPath, symmetricJwk);
+        SetOwnerOnlyPermissions(symmetricPath);
         Console.WriteLine($"Symmetric key written to {symmetricPath}");
     }
     else
@@ -76,6 +77,7 @@ generateKeyCommand.SetAction(parseResult =>
         var privatePath = Path.Combine(outputDir.FullName, $"{algorithm}-private.jwk");
         var publicPath = Path.Combine(outputDir.FullName, $"{algorithm}-public.jwk");
         File.WriteAllText(privatePath, privateJwk);
+        SetOwnerOnlyPermissions(privatePath);
         File.WriteAllText(publicPath, publicJwk);
         Console.WriteLine($"Private key written to {privatePath}");
         Console.WriteLine($"Public key written to {publicPath}");
@@ -262,6 +264,16 @@ verifyCommand.SetAction(parseResult =>
         return 1;
     }
 });
+
+// --- Helpers ---
+
+static void SetOwnerOnlyPermissions(string filePath)
+{
+    if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+    {
+        File.SetUnixFileMode(filePath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+    }
+}
 
 // --- Root command ---
 

@@ -20,20 +20,25 @@ using CoderPatros.Jsf.Keys;
 
 namespace CoderPatros.Jsf.Crypto.Algorithms;
 
+using CoderPatros.Jsf;
+
 internal sealed class HmacAlgorithm : ISignatureAlgorithm
 {
     public string AlgorithmId { get; }
     private readonly Func<byte[], HMAC> _hmacFactory;
+    private readonly int _minimumKeyLengthBytes;
 
-    public HmacAlgorithm(string algorithmId, Func<byte[], HMAC> hmacFactory)
+    public HmacAlgorithm(string algorithmId, Func<byte[], HMAC> hmacFactory, int minimumKeyLengthBytes)
     {
         AlgorithmId = algorithmId;
         _hmacFactory = hmacFactory;
+        _minimumKeyLengthBytes = minimumKeyLengthBytes;
     }
 
     public byte[] Sign(ReadOnlySpan<byte> data, SigningKey key)
     {
         var hmacKey = GetKeyBytes(key.KeyMaterial);
+        ValidateKeyLength(hmacKey);
         using var hmac = _hmacFactory(hmacKey);
         return hmac.ComputeHash(data.ToArray());
     }
@@ -41,9 +46,16 @@ internal sealed class HmacAlgorithm : ISignatureAlgorithm
     public bool Verify(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, VerificationKey key)
     {
         var hmacKey = GetKeyBytes(key.KeyMaterial);
+        ValidateKeyLength(hmacKey);
         using var hmac = _hmacFactory(hmacKey);
         var computed = hmac.ComputeHash(data.ToArray());
         return CryptographicOperations.FixedTimeEquals(computed, signature);
+    }
+
+    private void ValidateKeyLength(byte[] hmacKey)
+    {
+        if (hmacKey.Length < _minimumKeyLengthBytes)
+            throw new JsfException($"HMAC key length {hmacKey.Length} bytes is below the minimum of {_minimumKeyLengthBytes} bytes for {AlgorithmId}.");
     }
 
     private static byte[] GetKeyBytes(object keyMaterial)
@@ -52,7 +64,7 @@ internal sealed class HmacAlgorithm : ISignatureAlgorithm
         {
             SigningKey.HmacKeyMaterial h => h.Key,
             VerificationKey.HmacKeyMaterial h => h.Key,
-            _ => throw new ArgumentException("Invalid key type for HMAC.")
+            _ => throw new JsfException("Invalid key type for HMAC.")
         };
     }
 }

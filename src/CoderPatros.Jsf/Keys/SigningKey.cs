@@ -21,10 +21,12 @@ namespace CoderPatros.Jsf.Keys;
 
 /// <summary>
 /// Wraps a private or symmetric key for signing operations.
+/// Implements IDisposable to securely zero key material on disposal.
 /// </summary>
-public sealed class SigningKey
+public sealed class SigningKey : IDisposable
 {
     internal object KeyMaterial { get; }
+    private bool _disposed;
 
     private SigningKey(object keyMaterial)
     {
@@ -36,6 +38,28 @@ public sealed class SigningKey
     public static SigningKey FromHmac(byte[] key) => new(new HmacKeyMaterial(key));
     public static SigningKey FromEdDsa(byte[] privateKey, string curve) =>
         new(new EdDsaKeyMaterial(privateKey, curve));
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        switch (KeyMaterial)
+        {
+            case ECDsa ecdsa:
+                ecdsa.Dispose();
+                break;
+            case RSA rsa:
+                rsa.Dispose();
+                break;
+            case HmacKeyMaterial hmac:
+                CryptographicOperations.ZeroMemory(hmac.Key);
+                break;
+            case EdDsaKeyMaterial edDsa:
+                CryptographicOperations.ZeroMemory(edDsa.PrivateKey);
+                break;
+        }
+    }
 
     internal sealed record HmacKeyMaterial(byte[] Key);
     internal sealed record EdDsaKeyMaterial(byte[] PrivateKey, string Curve);

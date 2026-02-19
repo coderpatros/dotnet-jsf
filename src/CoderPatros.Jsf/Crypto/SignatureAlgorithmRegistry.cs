@@ -49,10 +49,10 @@ public sealed class SignatureAlgorithmRegistry
         Register(new EdDsaAlgorithm(JsfAlgorithm.Ed25519));
         Register(new EdDsaAlgorithm(JsfAlgorithm.Ed448));
 
-        // HMAC
-        Register(new HmacAlgorithm(JsfAlgorithm.HS256, k => new HMACSHA256(k)));
-        Register(new HmacAlgorithm(JsfAlgorithm.HS384, k => new HMACSHA384(k)));
-        Register(new HmacAlgorithm(JsfAlgorithm.HS512, k => new HMACSHA512(k)));
+        // HMAC (minimum key length = hash output length per RFC 2104)
+        Register(new HmacAlgorithm(JsfAlgorithm.HS256, k => new HMACSHA256(k), minimumKeyLengthBytes: 32));
+        Register(new HmacAlgorithm(JsfAlgorithm.HS384, k => new HMACSHA384(k), minimumKeyLengthBytes: 48));
+        Register(new HmacAlgorithm(JsfAlgorithm.HS512, k => new HMACSHA512(k), minimumKeyLengthBytes: 64));
     }
 
     public void Register(ISignatureAlgorithm algorithm)
