@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/CoderPatros.Jsf/CoderPatros.Jsf.csproj" />
+    <Project Path="src/CoderPatros.Jsf.Cli/CoderPatros.Jsf.Cli.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/CoderPatros.Jsf.Tests/CoderPatros.Jsf.Tests.csproj" />
