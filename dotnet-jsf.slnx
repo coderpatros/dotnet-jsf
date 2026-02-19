@@ -5,5 +5,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/CoderPatros.Jsf.Tests/CoderPatros.Jsf.Tests.csproj" />
+    <Project Path="tests/CoderPatros.Jsf.Cli.Tests/CoderPatros.Jsf.Cli.Tests.csproj" />
   </Folder>
 </Solution>
