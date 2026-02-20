@@ -44,15 +44,22 @@ var genOutputOption = new Option<DirectoryInfo?>("--output", "-o")
     Description = "Output directory for key files (defaults to current directory)"
 };
 
+var genForceOption = new Option<bool>("--force", "-f")
+{
+    Description = "Overwrite existing key files"
+};
+
 var generateKeyCommand = new Command("generate-key", "Generate a cryptographic key pair (or symmetric key for HMAC)");
 generateKeyCommand.Options.Add(genAlgorithmOption);
 generateKeyCommand.Options.Add(genOutputOption);
+generateKeyCommand.Options.Add(genForceOption);
 
 generateKeyCommand.SetAction(parseResult =>
 {
     var algorithm = parseResult.GetValue(genAlgorithmOption)!;
     var outputDir = parseResult.GetValue(genOutputOption)
         ?? new DirectoryInfo(Directory.GetCurrentDirectory());
+    var force = parseResult.GetValue(genForceOption);
 
     if (!validAlgorithms.Contains(algorithm))
     {
@@ -66,17 +73,32 @@ generateKeyCommand.SetAction(parseResult =>
 
     if (JwkKeyHelper.IsSymmetricAlgorithm(algorithm))
     {
-        var symmetricJwk = JwkKeyHelper.GenerateSymmetricKey(algorithm);
         var symmetricPath = Path.Combine(outputDir.FullName, $"{algorithm}-symmetric.jwk");
-        WriteSecretFile(symmetricPath, symmetricJwk);
+        if (!force && File.Exists(symmetricPath))
+        {
+            Console.Error.WriteLine($"Key file already exists: {symmetricPath}");
+            Console.Error.WriteLine("Use --force to overwrite existing key files.");
+            return 1;
+        }
+        var symmetricJwk = JwkKeyHelper.GenerateSymmetricKey(algorithm);
+        WriteSecretFile(symmetricPath, symmetricJwk, force);
         Console.WriteLine($"Symmetric key written to {symmetricPath}");
     }
     else
     {
-        var (privateJwk, publicJwk) = JwkKeyHelper.GenerateAsymmetricKey(algorithm);
         var privatePath = Path.Combine(outputDir.FullName, $"{algorithm}-private.jwk");
         var publicPath = Path.Combine(outputDir.FullName, $"{algorithm}-public.jwk");
-        WriteSecretFile(privatePath, privateJwk);
+        if (!force && (File.Exists(privatePath) || File.Exists(publicPath)))
+        {
+            if (File.Exists(privatePath))
+                Console.Error.WriteLine($"Key file already exists: {privatePath}");
+            if (File.Exists(publicPath))
+                Console.Error.WriteLine($"Key file already exists: {publicPath}");
+            Console.Error.WriteLine("Use --force to overwrite existing key files.");
+            return 1;
+        }
+        var (privateJwk, publicJwk) = JwkKeyHelper.GenerateAsymmetricKey(algorithm);
+        WriteSecretFile(privatePath, privateJwk, force);
         File.WriteAllText(publicPath, publicJwk);
         Console.WriteLine($"Private key written to {privatePath}");
         Console.WriteLine($"Public key written to {publicPath}");
@@ -293,10 +315,13 @@ verifyCommand.SetAction(parseResult =>
 
 // --- Helpers ---
 
-static void WriteSecretFile(string filePath, string content)
+static void WriteSecretFile(string filePath, string content, bool overwrite = false)
 {
     if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
     {
+        if (overwrite && File.Exists(filePath))
+            File.Delete(filePath);
+
         // Atomically create with owner-only permissions to avoid TOCTOU race
         var options = new FileStreamOptions
         {
