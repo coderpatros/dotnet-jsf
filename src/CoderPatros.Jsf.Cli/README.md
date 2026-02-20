@@ -37,13 +37,13 @@ Replace `linux-x64` with your target [runtime identifier](https://learn.microsof
 
 ```sh
 # Generate a key pair
-jsf generate-key -a ES256
+jsf-cli generate-key -a ES256
 
 # Sign a document
-jsf sign -k ES256-private.jwk -a ES256 -i document.json > signed.json
+jsf-cli sign -k ES256-private.jwk -a ES256 -i document.json > signed.json
 
 # Verify the signature
-jsf verify -k ES256-public.jwk -i signed.json
+jsf-cli verify -k ES256-public.jwk -i signed.json
 ```
 
 ## Commands
@@ -53,7 +53,7 @@ jsf verify -k ES256-public.jwk -i signed.json
 Generate a cryptographic key pair (asymmetric) or symmetric key (HMAC).
 
 ```
-jsf generate-key -a <algorithm> [-o <directory>]
+jsf-cli generate-key -a <algorithm> [-o <directory>]
 ```
 
 | Option | Description |
@@ -74,19 +74,19 @@ All key files use standard [JWK (JSON Web Key)](https://www.rfc-editor.org/rfc/r
 
 ```sh
 # ECDSA key pair
-jsf generate-key -a ES256
+jsf-cli generate-key -a ES256
 
 # RSA key pair
-jsf generate-key -a RS256
+jsf-cli generate-key -a RS256
 
 # EdDSA key pair
-jsf generate-key -a Ed25519
+jsf-cli generate-key -a Ed25519
 
 # HMAC symmetric key
-jsf generate-key -a HS256
+jsf-cli generate-key -a HS256
 
 # Specify output directory
-jsf generate-key -a ES256 -o ./keys
+jsf-cli generate-key -a ES256 -o ./keys
 ```
 
 #### Generated key sizes
@@ -109,7 +109,7 @@ jsf generate-key -a ES256 -o ./keys
 Sign a JSON document. Outputs the signed JSON to stdout.
 
 ```
-jsf sign -k <key-file> -a <algorithm> [-i <input-file>] [--embed-public-key] [--key-id <id>]
+jsf-cli sign -k <key-file> -a <algorithm> [-i <input-file>] [--embed-public-key] [--key-id <id>]
 ```
 
 | Option | Description |
@@ -124,25 +124,25 @@ jsf sign -k <key-file> -a <algorithm> [-i <input-file>] [--embed-public-key] [--
 
 ```sh
 # Sign from a file
-jsf sign -k ES256-private.jwk -a ES256 -i document.json
+jsf-cli sign -k ES256-private.jwk -a ES256 -i document.json
 
 # Sign from stdin
-echo '{"message":"hello"}' | jsf sign -k ES256-private.jwk -a ES256
+echo '{"message":"hello"}' | jsf-cli sign -k ES256-private.jwk -a ES256
 
 # Pipe to a file
-jsf sign -k ES256-private.jwk -a ES256 -i document.json > signed.json
+jsf-cli sign -k ES256-private.jwk -a ES256 -i document.json > signed.json
 
 # Embed the public key
-jsf sign -k ES256-private.jwk -a ES256 --embed-public-key -i document.json
+jsf-cli sign -k ES256-private.jwk -a ES256 --embed-public-key -i document.json
 
 # Include a key identifier
-jsf sign -k ES256-private.jwk -a ES256 --key-id my-key-1 -i document.json
+jsf-cli sign -k ES256-private.jwk -a ES256 --key-id my-key-1 -i document.json
 
 # Sign with RSA-PSS
-jsf sign -k PS256-private.jwk -a PS256 -i document.json
+jsf-cli sign -k PS256-private.jwk -a PS256 -i document.json
 
 # Sign with HMAC
-jsf sign -k HS256-symmetric.jwk -a HS256 -i document.json
+jsf-cli sign -k HS256-symmetric.jwk -a HS256 -i document.json
 ```
 
 ### verify
@@ -150,7 +150,7 @@ jsf sign -k HS256-symmetric.jwk -a HS256 -i document.json
 Verify a signed JSON document. Outputs `Valid` on success or `Invalid: <error>` on failure. Exits with code 0 for valid signatures, 1 for invalid.
 
 ```
-jsf verify [-k <key-file>] [-i <input-file>] [--allow-embedded-key] [--accepted-algorithms <list>]
+jsf-cli verify [-k <key-file>] [-i <input-file>] [--allow-embedded-key] [--accepted-algorithms <list>]
 ```
 
 | Option | Description |
@@ -164,16 +164,16 @@ jsf verify [-k <key-file>] [-i <input-file>] [--allow-embedded-key] [--accepted-
 
 ```sh
 # Verify with an explicit key
-jsf verify -k ES256-public.jwk -i signed.json
+jsf-cli verify -k ES256-public.jwk -i signed.json
 
 # Verify using the embedded public key
-jsf verify --allow-embedded-key -i signed.json
+jsf-cli verify --allow-embedded-key -i signed.json
 
 # Verify from stdin
-cat signed.json | jsf verify -k ES256-public.jwk
+cat signed.json | jsf-cli verify -k ES256-public.jwk
 
 # Restrict to specific algorithms
-jsf verify -k ES256-public.jwk --accepted-algorithms ES256,ES384 -i signed.json
+jsf-cli verify -k ES256-public.jwk --accepted-algorithms ES256,ES384 -i signed.json
 ```
 
 #### Exit codes
@@ -198,18 +198,18 @@ jsf verify -k ES256-public.jwk --accepted-algorithms ES256,ES384 -i signed.json
 ### Sign and verify with ECDSA
 
 ```sh
-jsf generate-key -a ES256 -o ./keys
-echo '{"order":"abc123","total":99.95}' | jsf sign -k ./keys/ES256-private.jwk -a ES256 > signed.json
-jsf verify -k ./keys/ES256-public.jwk -i signed.json
+jsf-cli generate-key -a ES256 -o ./keys
+echo '{"order":"abc123","total":99.95}' | jsf-cli sign -k ./keys/ES256-private.jwk -a ES256 > signed.json
+jsf-cli verify -k ./keys/ES256-public.jwk -i signed.json
 # Output: Valid
 ```
 
 ### Self-contained signatures with embedded keys
 
 ```sh
-jsf generate-key -a ES256 -o ./keys
-echo '{"status":"approved"}' | jsf sign -k ./keys/ES256-private.jwk -a ES256 --embed-public-key > signed.json
-jsf verify --allow-embedded-key -i signed.json
+jsf-cli generate-key -a ES256 -o ./keys
+echo '{"status":"approved"}' | jsf-cli sign -k ./keys/ES256-private.jwk -a ES256 --embed-public-key > signed.json
+jsf-cli verify --allow-embedded-key -i signed.json
 # Output: Valid
 ```
 
@@ -217,10 +217,10 @@ jsf verify --allow-embedded-key -i signed.json
 
 ```sh
 # Generate, sign, and verify in a single pipeline
-jsf generate-key -a ES256 -o ./keys
+jsf-cli generate-key -a ES256 -o ./keys
 echo '{"data":"test"}' \
-  | jsf sign -k ./keys/ES256-private.jwk -a ES256 \
-  | jsf verify -k ./keys/ES256-public.jwk
+  | jsf-cli sign -k ./keys/ES256-private.jwk -a ES256 \
+  | jsf-cli verify -k ./keys/ES256-public.jwk
 # Output: Valid
 ```
 
@@ -228,7 +228,7 @@ echo '{"data":"test"}' \
 
 ```sh
 # Only accept ES256 and ES384 signatures
-jsf verify -k key.jwk --accepted-algorithms ES256,ES384 -i signed.json
+jsf-cli verify -k key.jwk --accepted-algorithms ES256,ES384 -i signed.json
 ```
 
 ## Security notes
