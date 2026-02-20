@@ -12,16 +12,28 @@ JSF embeds cryptographic signatures directly within JSON objects, using [JSON Ca
 - Property exclusions and custom extensions
 - Non-mutating — all operations return new documents
 - Accepts both `JsonObject` and `string` inputs
+- Custom algorithm registry for extensibility
 
 ## Requirements
 
 - .NET 8.0+
 
-## Usage
+## Projects
 
-All operations go through `JsfSignatureService`.
+| Project | Description | Details |
+|---|---|---|
+| [CoderPatros.Jsf](src/CoderPatros.Jsf/README.md) | .NET library for signing and verifying JSON documents | [Library README](src/CoderPatros.Jsf/README.md) |
+| [CoderPatros.Jsf.Cli](src/CoderPatros.Jsf.Cli/README.md) | Command-line tool for key generation, signing, and verification | [CLI README](src/CoderPatros.Jsf.Cli/README.md) |
 
-### Sign and verify
+## Quick start — Library
+
+Install the NuGet package:
+
+```sh
+dotnet add package CoderPatros.Jsf
+```
+
+Sign and verify a document:
 
 ```csharp
 using System.Security.Cryptography;
@@ -36,164 +48,48 @@ var service = new JsfSignatureService();
 using var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
 var signingKey = SigningKey.FromECDsa(ecdsa);
 var verificationKey = VerificationKey.FromECDsa(ecdsa);
-var publicJwk = JwkKeyConverter.FromECDsa(ecdsa);
 
 // Sign
 var document = new JsonObject { ["message"] = "hello" };
 var signed = service.Sign(document, new SignatureOptions
 {
     Algorithm = JsfAlgorithm.ES256,
-    Key = signingKey,
-    PublicKey = publicJwk  // optional: embed public key in signature
+    Key = signingKey
 });
 
-// Verify with an explicit key
+// Verify
 var result = service.Verify(signed, new VerificationOptions
 {
     Key = verificationKey
 });
-
-// Or verify using the embedded public key
-var result2 = service.Verify(signed, new VerificationOptions());
-
 Console.WriteLine(result.IsValid); // true
 ```
 
-### Multi-signature (independent signers)
+See the [Library README](src/CoderPatros.Jsf/README.md) for the full API reference, multi-signature support, signature chains, key management, custom algorithms, and more.
 
-```csharp
-var doc = new JsonObject { ["message"] = "hello" };
+## Quick start — CLI
 
-var withSigner1 = service.AddSigner(doc, optionsForSigner1);
-var withBoth = service.AddSigner(withSigner1, optionsForSigner2);
-
-var result = service.VerifySigners(withBoth, new VerificationOptions
-{
-    KeyResolver = sig => ResolveKeyForSignature(sig)
-});
-```
-
-### Signature chain (sequential signatures)
-
-```csharp
-var doc = new JsonObject { ["message"] = "hello" };
-
-var withFirst = service.AppendToChain(doc, optionsForFirst);
-var withBoth = service.AppendToChain(withFirst, optionsForSecond);
-
-var result = service.VerifyChain(withBoth, new VerificationOptions
-{
-    KeyResolver = sig => ResolveKeyForSignature(sig)
-});
-```
-
-### Excluding properties and adding extensions
-
-```csharp
-var signed = service.Sign(document, new SignatureOptions
-{
-    Algorithm = JsfAlgorithm.ES256,
-    Key = signingKey,
-    Excludes = ["timestamp", "nonce"],
-    Extensions = new Dictionary<string, JsonNode?>
-    {
-        ["https://example.com/ext"] = "value"
-    }
-});
-```
-
-### Signing with other key types
-
-```csharp
-// RSA
-using var rsa = RSA.Create(2048);
-var rsaSigningKey = SigningKey.FromRsa(rsa);
-
-// HMAC (symmetric)
-var hmacKey = new byte[32];
-RandomNumberGenerator.Fill(hmacKey);
-var hmacSigningKey = SigningKey.FromHmac(hmacKey);
-
-// EdDSA (via raw key bytes)
-var edSigningKey = SigningKey.FromEdDsa(privateKeyBytes, JsfAlgorithm.Ed25519);
-```
-
-### Custom signature property name
-
-By default signatures are stored in a `"signature"` property. You can override this:
-
-```csharp
-var signed = service.Sign(document, new SignatureOptions
-{
-    Algorithm = JsfAlgorithm.ES256,
-    Key = signingKey,
-    SignaturePropertyName = "proof"
-});
-
-var result = service.Verify(signed, new VerificationOptions
-{
-    SignaturePropertyName = "proof"
-});
-```
-
-### Custom algorithm registry
-
-You can register additional algorithms by providing a custom `SignatureAlgorithmRegistry`:
-
-```csharp
-var registry = new SignatureAlgorithmRegistry();
-registry.Register(myCustomAlgorithm);
-
-var service = new JsfSignatureService(registry);
-```
-
-## CLI
-
-The `CoderPatros.Jsf.Cli` project provides a command-line tool for key generation, signing, and verification.
-
-### Generate a key pair
+Download the latest binary from the [Releases](https://github.com/coderpatros/dotnet-jsf/releases) page, or build from source:
 
 ```sh
-# Asymmetric (generates <alg>-private.jwk and <alg>-public.jwk)
+dotnet build src/CoderPatros.Jsf.Cli
+```
+
+Generate keys, sign, and verify:
+
+```sh
+# Generate an ECDSA key pair
 jsf generate-key -a ES256
 
-# Symmetric / HMAC (generates <alg>-symmetric.jwk)
-jsf generate-key -a HS256
+# Sign a document
+jsf sign -k ES256-private.jwk -a ES256 -i document.json > signed.json
 
-# Specify output directory
-jsf generate-key -a ES256 -o ./keys
-```
-
-### Sign a document
-
-```sh
-# From a file
-jsf sign -k ES256-private.jwk -a ES256 -i document.json
-
-# From stdin
-echo '{"message":"hello"}' | jsf sign -k ES256-private.jwk -a ES256
-
-# Embed the public key in the signature
-jsf sign -k ES256-private.jwk -a ES256 --embed-public-key -i document.json
-
-# Include a key identifier
-jsf sign -k ES256-private.jwk -a ES256 --key-id my-key-1 -i document.json
-```
-
-### Verify a signed document
-
-```sh
-# With an explicit key
+# Verify the signature
 jsf verify -k ES256-public.jwk -i signed.json
-
-# Using the embedded public key
-jsf verify -i signed.json
-
-# From stdin
-cat signed.json | jsf verify -k ES256-public.jwk
+# Output: Valid
 ```
 
-Outputs `Valid` on success or `Invalid: <error>` on failure.
+The CLI also supports stdin/stdout piping, embedded public keys, key identifiers, and algorithm whitelisting. See the [CLI README](src/CoderPatros.Jsf.Cli/README.md) for the full command reference.
 
 ## How JSF signing works
 
@@ -210,3 +106,7 @@ Verification reverses the process: remove `value`, canonicalize, and verify.
 ```sh
 dotnet test
 ```
+
+## License
+
+Apache-2.0
