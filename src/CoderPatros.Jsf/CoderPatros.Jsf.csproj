@@ -5,12 +5,28 @@
     <RootNamespace>CoderPatros.Jsf</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PackageId>CoderPatros.Jsf</PackageId>
+    <Description>JSON Signature Format implementation</Description>
+    <Authors>Patrick Dwyer</Authors>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/coderpatros/dotnet-jsf</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/coderpatros/dotnet-jsf.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>jsf;json;signature;signing;jcs;rfc8785;cryptography</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="CoderPatros.Jsf.Tests" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
 </Project>
