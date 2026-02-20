@@ -33,6 +33,16 @@ public static class Base64UrlEncoding
 
     public static byte[] Decode(string encoded)
     {
+        if (string.IsNullOrEmpty(encoded))
+            throw new JsfException("Base64url input must not be null or empty.");
+
+        // Validate that input contains only valid base64url characters
+        foreach (var c in encoded)
+        {
+            if (!IsValidBase64UrlChar(c))
+                throw new JsfException($"Invalid character '{c}' in base64url input.");
+        }
+
         var base64 = encoded
             .Replace('-', '+')
             .Replace('_', '/');
@@ -41,8 +51,14 @@ public static class Base64UrlEncoding
         {
             case 2: base64 += "=="; break;
             case 3: base64 += "="; break;
+            case 1: throw new JsfException("Invalid base64url input length.");
         }
 
         return Convert.FromBase64String(base64);
+    }
+
+    private static bool IsValidBase64UrlChar(char c)
+    {
+        return c is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-' or '_';
     }
 }

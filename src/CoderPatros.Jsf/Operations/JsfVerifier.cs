@@ -127,8 +127,7 @@ internal sealed class JsfVerifier
         var signingInput = SignatureObjectManipulator.CreateSigningInput(clone, sig, signaturePropertyName);
         var signatureBytes = Base64UrlEncoding.Decode(sig.Value);
 
-        var verificationKey = ResolveVerificationKey(key);
-        var isValid = algorithm.Verify(signingInput, signatureBytes, verificationKey);
+        var isValid = algorithm.Verify(signingInput, signatureBytes, key);
 
         return isValid ? VerificationResult.Success() : VerificationResult.Failure("Signature is invalid.");
     }
@@ -147,8 +146,7 @@ internal sealed class JsfVerifier
         var signingInput = SignatureObjectManipulator.CreateMultiSignerSigningInput(clone, sig, index);
         var signatureBytes = Base64UrlEncoding.Decode(sig.Value);
 
-        var verificationKey = ResolveVerificationKey(key);
-        var isValid = algorithm.Verify(signingInput, signatureBytes, verificationKey);
+        var isValid = algorithm.Verify(signingInput, signatureBytes, key);
 
         return isValid ? VerificationResult.Success() : VerificationResult.Failure("Signature is invalid.");
     }
@@ -163,8 +161,7 @@ internal sealed class JsfVerifier
         var signingInput = SignatureObjectManipulator.CreateChainSigningInput(document, sig);
         var signatureBytes = Base64UrlEncoding.Decode(sig.Value);
 
-        var verificationKey = ResolveVerificationKey(key);
-        var isValid = algorithm.Verify(signingInput, signatureBytes, verificationKey);
+        var isValid = algorithm.Verify(signingInput, signatureBytes, key);
 
         return isValid ? VerificationResult.Success() : VerificationResult.Failure("Signature is invalid.");
     }
@@ -210,11 +207,4 @@ internal sealed class JsfVerifier
         throw new JsfException("No verification key available. Provide a key or key resolver. To use the embedded public key, set AllowEmbeddedPublicKey to true.");
     }
 
-    private static VerificationKey ResolveVerificationKey(VerificationKey key)
-    {
-        // If the key wraps a JwkPublicKey, convert it to a concrete key
-        if (key.KeyMaterial is JwkPublicKey jwk)
-            return JwkKeyConverter.ToVerificationKey(jwk);
-        return key;
-    }
 }

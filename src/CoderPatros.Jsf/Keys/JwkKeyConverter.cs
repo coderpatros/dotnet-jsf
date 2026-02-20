@@ -65,11 +65,17 @@ public static class JwkKeyConverter
     public static ECDsa ToECDsa(JwkPublicKey jwk)
     {
         if (jwk.Kty != "EC")
-            throw new ArgumentException("JWK key type must be 'EC'.");
+            throw new JsfException("JWK key type must be 'EC'.");
+        if (jwk.Crv is null)
+            throw new JsfException("EC JWK missing required 'crv' parameter.");
+        if (jwk.X is null)
+            throw new JsfException("EC JWK missing required 'x' parameter.");
+        if (jwk.Y is null)
+            throw new JsfException("EC JWK missing required 'y' parameter.");
 
-        var curve = GetEcCurve(jwk.Crv!);
-        var x = Base64UrlEncoding.Decode(jwk.X!);
-        var y = Base64UrlEncoding.Decode(jwk.Y!);
+        var curve = GetEcCurve(jwk.Crv);
+        var x = Base64UrlEncoding.Decode(jwk.X);
+        var y = Base64UrlEncoding.Decode(jwk.Y);
 
         var parameters = new ECParameters
         {
@@ -84,10 +90,14 @@ public static class JwkKeyConverter
     public static RSA ToRsa(JwkPublicKey jwk)
     {
         if (jwk.Kty != "RSA")
-            throw new ArgumentException("JWK key type must be 'RSA'.");
+            throw new JsfException("JWK key type must be 'RSA'.");
+        if (jwk.N is null)
+            throw new JsfException("RSA JWK missing required 'n' parameter.");
+        if (jwk.E is null)
+            throw new JsfException("RSA JWK missing required 'e' parameter.");
 
-        var n = Base64UrlEncoding.Decode(jwk.N!);
-        var e = Base64UrlEncoding.Decode(jwk.E!);
+        var n = Base64UrlEncoding.Decode(jwk.N);
+        var e = Base64UrlEncoding.Decode(jwk.E);
 
         var parameters = new RSAParameters
         {
@@ -105,8 +115,10 @@ public static class JwkKeyConverter
         {
             "EC" => VerificationKey.FromECDsa(ToECDsa(jwk)),
             "RSA" => VerificationKey.FromRsa(ToRsa(jwk)),
-            "OKP" => VerificationKey.FromEdDsa(Base64UrlEncoding.Decode(jwk.X!), jwk.Crv!),
-            _ => throw new ArgumentException($"Unsupported key type: {jwk.Kty}")
+            "OKP" when jwk.X is null => throw new JsfException("OKP JWK missing required 'x' parameter."),
+            "OKP" when jwk.Crv is null => throw new JsfException("OKP JWK missing required 'crv' parameter."),
+            "OKP" => VerificationKey.FromEdDsa(Base64UrlEncoding.Decode(jwk.X), jwk.Crv),
+            _ => throw new JsfException($"Unsupported key type: {jwk.Kty}")
         };
     }
 

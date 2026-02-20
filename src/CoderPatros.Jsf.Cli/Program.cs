@@ -19,6 +19,7 @@ using System.CommandLine;
 using System.Text.Json.Nodes;
 using CoderPatros.Jsf;
 using CoderPatros.Jsf.Cli;
+using CoderPatros.Jsf.Keys;
 using CoderPatros.Jsf.Models;
 
 var validAlgorithms = new[]
@@ -67,8 +68,7 @@ generateKeyCommand.SetAction(parseResult =>
     {
         var symmetricJwk = JwkKeyHelper.GenerateSymmetricKey(algorithm);
         var symmetricPath = Path.Combine(outputDir.FullName, $"{algorithm}-symmetric.jwk");
-        File.WriteAllText(symmetricPath, symmetricJwk);
-        SetOwnerOnlyPermissions(symmetricPath);
+        WriteSecretFile(symmetricPath, symmetricJwk);
         Console.WriteLine($"Symmetric key written to {symmetricPath}");
     }
     else
@@ -76,8 +76,7 @@ generateKeyCommand.SetAction(parseResult =>
         var (privateJwk, publicJwk) = JwkKeyHelper.GenerateAsymmetricKey(algorithm);
         var privatePath = Path.Combine(outputDir.FullName, $"{algorithm}-private.jwk");
         var publicPath = Path.Combine(outputDir.FullName, $"{algorithm}-public.jwk");
-        File.WriteAllText(privatePath, privateJwk);
-        SetOwnerOnlyPermissions(privatePath);
+        WriteSecretFile(privatePath, privateJwk);
         File.WriteAllText(publicPath, publicJwk);
         Console.WriteLine($"Private key written to {privatePath}");
         Console.WriteLine($"Public key written to {publicPath}");
@@ -143,7 +142,7 @@ signCommand.SetAction(parseResult =>
     }
 
     var jwkJson = File.ReadAllText(keyFile.FullName);
-    var signingKey = JwkKeyHelper.LoadSigningKey(jwkJson);
+    using var signingKey = JwkKeyHelper.LoadSigningKey(jwkJson);
 
     string jsonInput;
     if (inputFile is not null)
@@ -196,6 +195,11 @@ var allowEmbeddedKeyOption = new Option<bool>("--allow-embedded-key")
     Description = "Allow verification using the public key embedded in the signature"
 };
 
+var acceptedAlgorithmsOption = new Option<string?>("--accepted-algorithms")
+{
+    Description = "Comma-separated list of accepted algorithm identifiers (e.g. ES256,ES384)"
+};
+
 var verifyInputOption = new Option<FileInfo?>("--input", "-i")
 {
     Description = "Path to signed JSON file (defaults to stdin)"
@@ -204,12 +208,14 @@ var verifyInputOption = new Option<FileInfo?>("--input", "-i")
 var verifyCommand = new Command("verify", "Verify a signed JSON document");
 verifyCommand.Options.Add(verifyKeyOption);
 verifyCommand.Options.Add(allowEmbeddedKeyOption);
+verifyCommand.Options.Add(acceptedAlgorithmsOption);
 verifyCommand.Options.Add(verifyInputOption);
 
 verifyCommand.SetAction(parseResult =>
 {
     var keyFile = parseResult.GetValue(verifyKeyOption);
     var allowEmbeddedKey = parseResult.GetValue(allowEmbeddedKeyOption);
+    var acceptedAlgorithmsValue = parseResult.GetValue(acceptedAlgorithmsOption);
     var inputFile = parseResult.GetValue(verifyInputOption);
 
     string jsonInput;
@@ -227,11 +233,21 @@ verifyCommand.SetAction(parseResult =>
         jsonInput = Console.In.ReadToEnd();
     }
 
-    var verificationOptions = new VerificationOptions
+    IReadOnlySet<string>? acceptedAlgorithms = null;
+    if (acceptedAlgorithmsValue is not null)
     {
-        AllowEmbeddedPublicKey = allowEmbeddedKey
-    };
+        var parsed = acceptedAlgorithmsValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var invalid = parsed.Where(a => !validAlgorithms.Contains(a)).ToList();
+        if (invalid.Count > 0)
+        {
+            Console.Error.WriteLine($"Unknown algorithm(s): {string.Join(", ", invalid)}");
+            Console.Error.WriteLine($"Valid algorithms: {string.Join(", ", validAlgorithms)}");
+            return 1;
+        }
+        acceptedAlgorithms = new HashSet<string>(parsed, StringComparer.Ordinal);
+    }
 
+    VerificationKey? verificationKey = null;
     if (keyFile is not null)
     {
         if (!keyFile.Exists)
@@ -240,38 +256,61 @@ verifyCommand.SetAction(parseResult =>
             return 1;
         }
         var jwkJson = File.ReadAllText(keyFile.FullName);
-        verificationOptions = verificationOptions with { Key = JwkKeyHelper.LoadVerificationKey(jwkJson) };
+        verificationKey = JwkKeyHelper.LoadVerificationKey(jwkJson);
     }
 
-    var doc = JsonNode.Parse(jsonInput)?.AsObject();
-    if (doc is null)
+    using (verificationKey)
     {
-        Console.WriteLine("Invalid: Input is not a valid JSON object.");
-        return 1;
-    }
+        var verificationOptions = new VerificationOptions
+        {
+            AllowEmbeddedPublicKey = allowEmbeddedKey,
+            AcceptedAlgorithms = acceptedAlgorithms,
+            Key = verificationKey
+        };
 
-    var service = new JsfSignatureService();
-    var result = service.Verify(doc, verificationOptions);
+        var doc = JsonNode.Parse(jsonInput)?.AsObject();
+        if (doc is null)
+        {
+            Console.WriteLine("Invalid: Input is not a valid JSON object.");
+            return 1;
+        }
 
-    if (result.IsValid)
-    {
-        Console.WriteLine("Valid");
-        return 0;
-    }
-    else
-    {
-        Console.WriteLine($"Invalid: {result.Error}");
-        return 1;
+        var service = new JsfSignatureService();
+        var result = service.Verify(doc, verificationOptions);
+
+        if (result.IsValid)
+        {
+            Console.WriteLine("Valid");
+            return 0;
+        }
+        else
+        {
+            Console.WriteLine($"Invalid: {result.Error}");
+            return 1;
+        }
     }
 });
 
 // --- Helpers ---
 
-static void SetOwnerOnlyPermissions(string filePath)
+static void WriteSecretFile(string filePath, string content)
 {
     if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
     {
-        File.SetUnixFileMode(filePath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        // Atomically create with owner-only permissions to avoid TOCTOU race
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.CreateNew,
+            Access = FileAccess.Write,
+            UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite
+        };
+        using var stream = new FileStream(filePath, options);
+        using var writer = new StreamWriter(stream);
+        writer.Write(content);
+    }
+    else
+    {
+        File.WriteAllText(filePath, content);
     }
 }
 

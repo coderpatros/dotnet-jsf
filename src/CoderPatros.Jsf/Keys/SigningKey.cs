@@ -26,7 +26,7 @@ namespace CoderPatros.Jsf.Keys;
 public sealed class SigningKey : IDisposable
 {
     internal object KeyMaterial { get; }
-    private bool _disposed;
+    private int _disposed;
 
     private SigningKey(object keyMaterial)
     {
@@ -41,8 +41,7 @@ public sealed class SigningKey : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
+        if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0) return;
 
         switch (KeyMaterial)
         {

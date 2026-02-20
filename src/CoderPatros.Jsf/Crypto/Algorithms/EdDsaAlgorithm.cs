@@ -33,12 +33,25 @@ internal sealed class EdDsaAlgorithm : ISignatureAlgorithm
         AlgorithmId = algorithmId;
     }
 
+    private static readonly IReadOnlyDictionary<string, int> ExpectedPrivateKeySizes = new Dictionary<string, int>
+    {
+        ["Ed25519"] = 32,
+        ["Ed448"] = 57
+    };
+
+    private static readonly IReadOnlyDictionary<string, int> ExpectedPublicKeySizes = new Dictionary<string, int>
+    {
+        ["Ed25519"] = 32,
+        ["Ed448"] = 57
+    };
+
     public byte[] Sign(ReadOnlySpan<byte> data, SigningKey key)
     {
         if (key.KeyMaterial is not SigningKey.EdDsaKeyMaterial edKey)
             throw new JsfException($"Algorithm {AlgorithmId} requires an EdDSA key.");
         if (edKey.Curve != AlgorithmId)
             throw new JsfException($"Algorithm {AlgorithmId} requires curve {AlgorithmId}, but key uses {edKey.Curve}.");
+        ValidatePrivateKeyLength(edKey.PrivateKey, edKey.Curve);
         var dataArray = data.ToArray();
 
         return edKey.Curve switch
@@ -54,6 +67,7 @@ internal sealed class EdDsaAlgorithm : ISignatureAlgorithm
         var (publicKeyBytes, curve) = ResolvePublicKey(key);
         if (curve != AlgorithmId)
             throw new JsfException($"Algorithm {AlgorithmId} requires curve {AlgorithmId}, but key uses {curve}.");
+        ValidatePublicKeyLength(publicKeyBytes, curve);
         var dataArray = data.ToArray();
         var sigArray = signature.ToArray();
 
@@ -95,6 +109,18 @@ internal sealed class EdDsaAlgorithm : ISignatureAlgorithm
         verifier.Init(false, new Ed448PublicKeyParameters(publicKey, 0));
         verifier.BlockUpdate(data, 0, data.Length);
         return verifier.VerifySignature(signature);
+    }
+
+    private static void ValidatePrivateKeyLength(byte[] privateKey, string curve)
+    {
+        if (ExpectedPrivateKeySizes.TryGetValue(curve, out var expected) && privateKey.Length != expected)
+            throw new JsfException($"EdDSA {curve} private key must be {expected} bytes, but got {privateKey.Length} bytes.");
+    }
+
+    private static void ValidatePublicKeyLength(byte[] publicKey, string curve)
+    {
+        if (ExpectedPublicKeySizes.TryGetValue(curve, out var expected) && publicKey.Length != expected)
+            throw new JsfException($"EdDSA {curve} public key must be {expected} bytes, but got {publicKey.Length} bytes.");
     }
 
     private static (byte[] PublicKey, string Curve) ResolvePublicKey(VerificationKey key)

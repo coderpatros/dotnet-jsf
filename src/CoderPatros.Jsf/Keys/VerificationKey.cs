@@ -26,7 +26,7 @@ namespace CoderPatros.Jsf.Keys;
 public sealed class VerificationKey : IDisposable
 {
     internal object KeyMaterial { get; }
-    private bool _disposed;
+    private int _disposed;
 
     private VerificationKey(object keyMaterial)
     {
@@ -42,8 +42,7 @@ public sealed class VerificationKey : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
+        if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0) return;
 
         switch (KeyMaterial)
         {
@@ -55,6 +54,9 @@ public sealed class VerificationKey : IDisposable
                 break;
             case HmacKeyMaterial hmac:
                 CryptographicOperations.ZeroMemory(hmac.Key);
+                break;
+            case EdDsaKeyMaterial edDsa:
+                CryptographicOperations.ZeroMemory(edDsa.PublicKey);
                 break;
         }
     }
