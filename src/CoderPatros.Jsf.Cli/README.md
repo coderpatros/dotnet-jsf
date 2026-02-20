@@ -1,4 +1,4 @@
-# CoderPatros.Jsf CLI
+# JSF CLI
 
 A command-line tool for generating cryptographic keys, signing JSON documents, and verifying signatures using [JSON Signature Format (JSF)](https://cyberphone.github.io/doc/security/jsf.html).
 
