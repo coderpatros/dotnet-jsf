@@ -8,7 +8,17 @@ Built with Blazor WebAssembly — all cryptographic operations run entirely in t
 
 Use the web tool at [patrickdwyer.au/dotnet-jsf](https://patrickdwyer.au/dotnet-jsf/) — no installation required.
 
-## Running locally
+## Running
+
+### With Docker
+
+```sh
+docker run --rm -p 8080:8080 coderpatros/jsf-web
+```
+
+Open `http://localhost:8080` in your browser.
+
+### From source
 
 Requires .NET 8.0 SDK or later.
 

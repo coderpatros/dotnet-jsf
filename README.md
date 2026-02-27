@@ -131,7 +131,15 @@ The API also supports multi-signatures and signature chains. See the [API README
 
 ## Quick start — Web
 
-Try the web tool online at [patrickdwyer.au/dotnet-jsf](https://patrickdwyer.au/dotnet-jsf/), or run it locally:
+Try the web tool online at [patrickdwyer.au/dotnet-jsf](https://patrickdwyer.au/dotnet-jsf/).
+
+Run the web tool with Docker:
+
+```sh
+docker run --rm -p 8080:8080 coderpatros/jsf-web
+```
+
+Or run it locally:
 
 ```sh
 dotnet run --project src/CoderPatros.Jsf.Web
