@@ -2,9 +2,13 @@
   <Folder Name="/src/">
     <Project Path="src/CoderPatros.Jsf/CoderPatros.Jsf.csproj" />
     <Project Path="src/CoderPatros.Jsf.Cli/CoderPatros.Jsf.Cli.csproj" />
+    <Project Path="src/CoderPatros.Jsf.Api/CoderPatros.Jsf.Api.csproj" />
+    <Project Path="src/CoderPatros.Jsf.Web/CoderPatros.Jsf.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/CoderPatros.Jsf.Tests/CoderPatros.Jsf.Tests.csproj" />
     <Project Path="tests/CoderPatros.Jsf.Cli.Tests/CoderPatros.Jsf.Cli.Tests.csproj" />
+    <Project Path="tests/CoderPatros.Jsf.Api.Tests/CoderPatros.Jsf.Api.Tests.csproj" />
+    <Project Path="tests/CoderPatros.Jsf.Web.Tests/CoderPatros.Jsf.Web.Tests.csproj" />
   </Folder>
 </Solution>

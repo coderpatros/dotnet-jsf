@@ -39,6 +39,10 @@ public sealed class VerificationKey : IDisposable
     public static VerificationKey FromEdDsa(byte[] publicKey, string curve) =>
         new(new EdDsaKeyMaterial(publicKey, curve));
     public static VerificationKey FromJwk(JwkPublicKey jwk) => new(jwk);
+    public static VerificationKey FromBouncyCastleEc(byte[] x, byte[] y, string curve) =>
+        new(new BouncyCastleEcKeyMaterial(x, y, curve));
+    public static VerificationKey FromBouncyCastleRsa(byte[] modulus, byte[] exponent) =>
+        new(new BouncyCastleRsaKeyMaterial(modulus, exponent));
 
     public void Dispose()
     {
@@ -63,4 +67,6 @@ public sealed class VerificationKey : IDisposable
 
     internal sealed record HmacKeyMaterial(byte[] Key);
     internal sealed record EdDsaKeyMaterial(byte[] PublicKey, string Curve);
+    internal sealed record BouncyCastleEcKeyMaterial(byte[] X, byte[] Y, string Curve);
+    internal sealed record BouncyCastleRsaKeyMaterial(byte[] Modulus, byte[] Exponent);
 }

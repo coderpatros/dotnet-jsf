@@ -1,0 +1,106 @@
+@page "/sign"
+@using System.Text.Json
+@using System.Text.Json.Nodes
+@using CoderPatros.Jsf.Crypto
+@using CoderPatros.Jsf.Keys
+@using CoderPatros.Jsf.Models
+
+<PageTitle>Sign - JSF Web Tool</PageTitle>
+
+<h1>Sign a JSON Document</h1>
+
+<div class="privacy-note">
+    Signing runs entirely in your browser. Your key and document never leave your machine.
+</div>
+
+<AlgorithmSelector @bind-SelectedAlgorithm="_algorithm" Label="Algorithm" />
+
+<JsonEditor @bind-Value="_keyJson" Label="Private/Symmetric Key (JWK)" Placeholder="Paste JWK key here..." />
+
+<div class="form-group">
+    <label>
+        <input type="checkbox" @bind="_embedPublicKey" /> Embed public key in signature
+    </label>
+</div>
+
+<div class="form-group">
+    <label>Key ID (optional)</label>
+    <input type="text" @bind="_keyId" placeholder="Optional key identifier" />
+</div>
+
+<JsonEditor @bind-Value="_documentJson" Label="JSON Document" Placeholder="Paste JSON document to sign..." />
+
+<div class="actions">
+    <button class="primary" @onclick="SignDocument" disabled="@(!CanSign)">Sign</button>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="error-message">@_errorMessage</div>
+}
+
+@if (!string.IsNullOrEmpty(_signedOutput))
+{
+    <div class="form-group">
+        <label>Signed Document</label>
+        <div class="key-display">@_signedOutput</div>
+    </div>
+}
+
+@code {
+    private static readonly JsonSerializerOptions IndentedOptions = new() { WriteIndented = true };
+
+    private string _algorithm = "";
+    private string _keyJson = "";
+    private string _documentJson = "";
+    private bool _embedPublicKey;
+    private string _keyId = "";
+    private string? _errorMessage;
+    private string _signedOutput = "";
+
+    private bool CanSign => !string.IsNullOrEmpty(_algorithm) &&
+                           !string.IsNullOrEmpty(_keyJson) &&
+                           !string.IsNullOrEmpty(_documentJson);
+
+    private void SignDocument()
+    {
+        _errorMessage = null;
+        _signedOutput = "";
+
+        try
+        {
+            var registry = SignatureAlgorithmRegistry.CreateBouncyCastleOnly();
+            var service = new JsfSignatureService(registry);
+
+            using var signingKey = BouncyCastleJwkKeyHelper.LoadSigningKey(_keyJson);
+
+            var options = new SignatureOptions
+            {
+                Algorithm = _algorithm,
+                Key = signingKey,
+                KeyId = string.IsNullOrWhiteSpace(_keyId) ? null : _keyId
+            };
+
+            if (_embedPublicKey)
+            {
+                var publicKey = BouncyCastleJwkKeyHelper.ExtractPublicKey(_keyJson);
+                if (publicKey is null)
+                {
+                    _errorMessage = "Cannot embed public key for symmetric (HMAC) keys.";
+                    return;
+                }
+                options = options with { PublicKey = publicKey };
+            }
+
+            var doc = JsonNode.Parse(_documentJson)?.AsObject()
+                ?? throw new InvalidOperationException("Input is not a valid JSON object.");
+
+            var signed = service.Sign(doc, options);
+            _signedOutput = signed.ToJsonString(IndentedOptions);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+}

@@ -18,15 +18,14 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using CoderPatros.Jsf.Keys;
 using CoderPatros.Jsf.Serialization;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 
-namespace CoderPatros.Jsf.Cli;
+namespace CoderPatros.Jsf.Keys;
 
-internal static class JwkKeyHelper
+public static class JwkKeyHelper
 {
     private static readonly JsonSerializerOptions IndentedJsonOptions = new() { WriteIndented = true };
 
@@ -117,7 +116,7 @@ internal static class JwkKeyHelper
         return ToJwkPublicKey(obj, kty);
     }
 
-    private static JwkPublicKey ToJwkPublicKey(JsonObject obj, string kty)
+    internal static JwkPublicKey ToJwkPublicKey(JsonObject obj, string kty)
     {
         return kty switch
         {
