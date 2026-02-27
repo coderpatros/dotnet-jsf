@@ -1,4 +1,4 @@
-# JSON Signature Format CLI and Library for .NET
+# JSON Signature Format for .NET
 
 A .NET implementation of [JSON Signature Format (JSF)](https://cyberphone.github.io/doc/security/jsf.html) — a scheme for signing JSON data with enveloped signatures.
 
@@ -24,6 +24,8 @@ JSF embeds cryptographic signatures directly within JSON objects, using [JSON Ca
 |---|---|---|
 | [CoderPatros.Jsf](src/CoderPatros.Jsf/README.md) | .NET library for signing and verifying JSON documents | [Library README](src/CoderPatros.Jsf/README.md) |
 | [CoderPatros.Jsf.Cli](src/CoderPatros.Jsf.Cli/README.md) | Command-line tool for key generation, signing, and verification | [CLI README](src/CoderPatros.Jsf.Cli/README.md) |
+| [CoderPatros.Jsf.Api](src/CoderPatros.Jsf.Api/README.md) | REST API for key generation, signing, and verification | [API README](src/CoderPatros.Jsf.Api/README.md) |
+| [CoderPatros.Jsf.Web](src/CoderPatros.Jsf.Web/README.md) | Browser-based tool for key generation, signing, and verification | [Web README](src/CoderPatros.Jsf.Web/README.md) |
 
 ## Quick start — Library
 
@@ -90,6 +92,46 @@ jsf verify -k ES256-public.jwk -i signed.json
 ```
 
 The CLI also supports stdin/stdout piping, embedded public keys, key identifiers, and algorithm whitelisting. See the [CLI README](src/CoderPatros.Jsf.Cli/README.md) for the full command reference.
+
+## Quick start — API
+
+Run the API server:
+
+```sh
+dotnet run --project src/CoderPatros.Jsf.Api
+```
+
+Generate keys, sign, and verify with curl:
+
+```sh
+# Generate an ECDSA key pair
+curl -s -X POST http://localhost:5000/api/keys/generate \
+  -H "Content-Type: application/json" \
+  -d '{"algorithm":"ES256"}'
+
+# Sign a document
+curl -s -X POST http://localhost:5000/api/sign \
+  -H "Content-Type: application/json" \
+  -d '{"document":{"message":"hello"},"algorithm":"ES256","key":{...}}'
+
+# Verify the signature
+curl -s -X POST http://localhost:5000/api/verify \
+  -H "Content-Type: application/json" \
+  -d '{"document":{...},"key":{...}}'
+# Output: {"isValid":true,"error":null}
+```
+
+The API also supports multi-signatures and signature chains. See the [API README](src/CoderPatros.Jsf.Api/README.md) for the full endpoint reference.
+
+## Quick start — Web
+
+Try the web tool online at [patrickdwyer.au/dotnet-jsf](https://patrickdwyer.au/dotnet-jsf/), or run it locally:
+
+```sh
+dotnet run --project src/CoderPatros.Jsf.Web
+```
+
+Open the app in your browser to generate keys, sign documents, and verify signatures. All cryptographic operations run entirely in the browser — your keys and documents never leave your machine. See the [Web README](src/CoderPatros.Jsf.Web/README.md) for more details.
 
 ## How JSF signing works
 
