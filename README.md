@@ -1,4 +1,4 @@
-# JSON Signature Format for .NET
+# JSON Signature Format CLI tool, web tool, API server, and Library for .NET
 
 A .NET implementation of [JSON Signature Format (JSF)](https://cyberphone.github.io/doc/security/jsf.html) — a scheme for signing JSON data with enveloped signatures.
 
