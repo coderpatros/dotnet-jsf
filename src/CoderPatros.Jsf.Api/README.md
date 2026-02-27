@@ -4,6 +4,16 @@ A REST API for generating cryptographic keys, signing JSON documents, and verify
 
 ## Running
 
+### With Docker
+
+```sh
+docker run --rm -p 8080:8080 coderpatros/jsf-api
+```
+
+The API starts on `http://localhost:8080`. Browse to `http://localhost:8080/swagger` for the interactive Swagger UI.
+
+### From source
+
 Requires .NET 8.0 SDK or later.
 
 ```sh
