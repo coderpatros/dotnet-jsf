@@ -38,6 +38,10 @@ public sealed class SigningKey : IDisposable
     public static SigningKey FromHmac(byte[] key) => new(new HmacKeyMaterial(key));
     public static SigningKey FromEdDsa(byte[] privateKey, string curve) =>
         new(new EdDsaKeyMaterial(privateKey, curve));
+    public static SigningKey FromBouncyCastleEc(byte[] d, byte[] x, byte[] y, string curve) =>
+        new(new BouncyCastleEcKeyMaterial(d, x, y, curve));
+    public static SigningKey FromBouncyCastleRsa(byte[] modulus, byte[] exponent, byte[] d, byte[] p, byte[] q, byte[] dp, byte[] dq, byte[] inverseQ) =>
+        new(new BouncyCastleRsaKeyMaterial(modulus, exponent, d, p, q, dp, dq, inverseQ));
 
     public void Dispose()
     {
@@ -57,9 +61,22 @@ public sealed class SigningKey : IDisposable
             case EdDsaKeyMaterial edDsa:
                 CryptographicOperations.ZeroMemory(edDsa.PrivateKey);
                 break;
+            case BouncyCastleEcKeyMaterial bcEc:
+                CryptographicOperations.ZeroMemory(bcEc.D);
+                break;
+            case BouncyCastleRsaKeyMaterial bcRsa:
+                CryptographicOperations.ZeroMemory(bcRsa.D);
+                CryptographicOperations.ZeroMemory(bcRsa.P);
+                CryptographicOperations.ZeroMemory(bcRsa.Q);
+                CryptographicOperations.ZeroMemory(bcRsa.DP);
+                CryptographicOperations.ZeroMemory(bcRsa.DQ);
+                CryptographicOperations.ZeroMemory(bcRsa.InverseQ);
+                break;
         }
     }
 
     internal sealed record HmacKeyMaterial(byte[] Key);
     internal sealed record EdDsaKeyMaterial(byte[] PrivateKey, string Curve);
+    internal sealed record BouncyCastleEcKeyMaterial(byte[] D, byte[] X, byte[] Y, string Curve);
+    internal sealed record BouncyCastleRsaKeyMaterial(byte[] Modulus, byte[] Exponent, byte[] D, byte[] P, byte[] Q, byte[] DP, byte[] DQ, byte[] InverseQ);
 }

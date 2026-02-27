@@ -55,6 +55,42 @@ public sealed class SignatureAlgorithmRegistry
         Register(new HmacAlgorithm(JsfAlgorithm.HS512, k => new HMACSHA512(k), minimumKeyLengthBytes: 64));
     }
 
+    public static SignatureAlgorithmRegistry CreateBouncyCastleOnly()
+    {
+        var registry = new SignatureAlgorithmRegistry(skipDefaults: true);
+
+        // ECDSA (BouncyCastle)
+        registry.Register(new BouncyCastleEcdsaAlgorithm(JsfAlgorithm.ES256, "SHA-256"));
+        registry.Register(new BouncyCastleEcdsaAlgorithm(JsfAlgorithm.ES384, "SHA-384"));
+        registry.Register(new BouncyCastleEcdsaAlgorithm(JsfAlgorithm.ES512, "SHA-512"));
+
+        // RSA PKCS#1 v1.5 (BouncyCastle)
+        registry.Register(new BouncyCastleRsaPkcs1Algorithm(JsfAlgorithm.RS256, "SHA-256"));
+        registry.Register(new BouncyCastleRsaPkcs1Algorithm(JsfAlgorithm.RS384, "SHA-384"));
+        registry.Register(new BouncyCastleRsaPkcs1Algorithm(JsfAlgorithm.RS512, "SHA-512"));
+
+        // RSA-PSS (BouncyCastle)
+        registry.Register(new BouncyCastleRsaPssAlgorithm(JsfAlgorithm.PS256, "SHA-256"));
+        registry.Register(new BouncyCastleRsaPssAlgorithm(JsfAlgorithm.PS384, "SHA-384"));
+        registry.Register(new BouncyCastleRsaPssAlgorithm(JsfAlgorithm.PS512, "SHA-512"));
+
+        // EdDSA (already BouncyCastle-based)
+        registry.Register(new EdDsaAlgorithm(JsfAlgorithm.Ed25519));
+        registry.Register(new EdDsaAlgorithm(JsfAlgorithm.Ed448));
+
+        // HMAC (BouncyCastle)
+        registry.Register(new BouncyCastleHmacAlgorithm(JsfAlgorithm.HS256, "SHA-256", minimumKeyLengthBytes: 32));
+        registry.Register(new BouncyCastleHmacAlgorithm(JsfAlgorithm.HS384, "SHA-384", minimumKeyLengthBytes: 48));
+        registry.Register(new BouncyCastleHmacAlgorithm(JsfAlgorithm.HS512, "SHA-512", minimumKeyLengthBytes: 64));
+
+        return registry;
+    }
+
+    private SignatureAlgorithmRegistry(bool skipDefaults)
+    {
+        // Private constructor for factory methods — no default registrations
+    }
+
     public void Register(ISignatureAlgorithm algorithm)
     {
         _algorithms[algorithm.AlgorithmId] = algorithm;

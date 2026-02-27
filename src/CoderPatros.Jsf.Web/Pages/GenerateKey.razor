@@ -1,0 +1,68 @@
+@page "/generate-key"
+@using CoderPatros.Jsf.Keys
+
+<PageTitle>Generate Key - JSF Web Tool</PageTitle>
+
+<h1>Generate Key</h1>
+
+<div class="privacy-note">
+    Keys are generated entirely in your browser. They never leave your machine.
+</div>
+
+<AlgorithmSelector @bind-SelectedAlgorithm="_algorithm" Label="Algorithm" />
+
+<div class="actions">
+    <button class="primary" @onclick="Generate" disabled="@string.IsNullOrEmpty(_algorithm)">Generate Key</button>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="error-message">@_errorMessage</div>
+}
+
+@if (_isSymmetric)
+{
+    <KeyDisplay Label="Symmetric Key (keep secret)" Value="@_symmetricKey" FileName="@($"{_algorithm}-symmetric.jwk")" />
+}
+else
+{
+    <KeyDisplay Label="Private Key (keep secret)" Value="@_privateKey" FileName="@($"{_algorithm}-private.jwk")" />
+    <KeyDisplay Label="Public Key (safe to share)" Value="@_publicKey" FileName="@($"{_algorithm}-public.jwk")" />
+}
+
+@code {
+    private string _algorithm = "";
+    private string _privateKey = "";
+    private string _publicKey = "";
+    private string _symmetricKey = "";
+    private bool _isSymmetric;
+    private string? _errorMessage;
+
+    private void Generate()
+    {
+        _errorMessage = null;
+        _privateKey = "";
+        _publicKey = "";
+        _symmetricKey = "";
+
+        try
+        {
+            if (BouncyCastleJwkKeyHelper.IsSymmetricAlgorithm(_algorithm))
+            {
+                _isSymmetric = true;
+                _symmetricKey = BouncyCastleJwkKeyHelper.GenerateSymmetricKey(_algorithm);
+            }
+            else
+            {
+                _isSymmetric = false;
+                var (privateJwk, publicJwk) = BouncyCastleJwkKeyHelper.GenerateAsymmetricKey(_algorithm);
+                _privateKey = privateJwk;
+                _publicKey = publicJwk;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+}
