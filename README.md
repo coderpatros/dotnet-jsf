@@ -95,7 +95,13 @@ The CLI also supports stdin/stdout piping, embedded public keys, key identifiers
 
 ## Quick start — API
 
-Run the API server:
+Run the API server with Docker:
+
+```sh
+docker run --rm -p 8080:8080 coderpatros/jsf-api
+```
+
+Or from source:
 
 ```sh
 dotnet run --project src/CoderPatros.Jsf.Api
